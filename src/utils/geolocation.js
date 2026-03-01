@@ -12,14 +12,14 @@ const SUPPORTED_COUNTRIES = {
 
 /**
  * Get flag image URL for a country code (reliable cross-platform rendering)
- * Uses flagcdn.com which serves SVG country flags
+ * Uses flagcdn.com SVG flags for maximum compatibility
  * @param {string} countryCode - ISO country code
  * @returns {string} Flag image URL
  */
 export function getFlagUrl(countryCode) {
   const info = SUPPORTED_COUNTRIES[countryCode];
   const iso = info ? info.code : countryCode.toLowerCase();
-  return `https://flagcdn.com/w80/${iso}.png`;
+  return `https://flagcdn.com/${iso}.svg`;
 }
 
 const STORAGE_KEY = "selectedCountry";
