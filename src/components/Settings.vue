@@ -40,7 +40,7 @@
               :class="{ 'lang-option-active': locale === 'fr' }"
               @click="changeLanguage('fr')"
             >
-              Fran\u00E7ais
+              Français
             </button>
           </div>
         </div>
