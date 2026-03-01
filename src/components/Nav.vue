@@ -5,7 +5,7 @@
     </div>
     <div class="nav-list-warp" v-show="isOpen">
       <div class="nav-header">
-        <span class="nav-title">{{ t('appTitle') }} <span class="country-indicator">{{ currentCountryFlag }}</span></span>
+        <span class="nav-title">{{ t('appTitle') }} <img v-if="currentCountryFlagUrl" class="country-indicator" :src="currentCountryFlagUrl" alt="" /></span>
         <div class="nav-header-actions">
           <button
             class="settings-btn"
@@ -80,7 +80,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import { useI18n } from "../i18n/index.js";
-import { getCountryInfo } from "../utils/geolocation.js";
+import { getCountryInfo, getFlagUrl } from "../utils/geolocation.js";
 
 const { t, toggleLocale } = useI18n();
 
@@ -90,10 +90,9 @@ defineEmits(["switchMode", "openSettings"]);
 const isOpen = ref(false);
 const search = ref("");
 
-const currentCountryFlag = computed(() => {
+const currentCountryFlagUrl = computed(() => {
   if (!props.currentCountry) return "";
-  const countryInfo = getCountryInfo(props.currentCountry);
-  return countryInfo?.flag || "";
+  return getFlagUrl(props.currentCountry);
 });
 
 const tvChannelCount = computed(() => {
@@ -184,8 +183,10 @@ function setTitle(title) {
       gap: 0.5rem;
 
       .country-indicator {
-        font-size: 1.3rem;
-        line-height: 1;
+        height: 1rem;
+        width: auto;
+        border-radius: 2px;
+        vertical-align: middle;
       }
     }
 
