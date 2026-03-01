@@ -1,13 +1,26 @@
 // Geolocation utility for country-based content filtering
-// Supports: France (FR), United Kingdom (UK), Germany (DE), Netherlands (NL), Portugal (PT)
+// Supports: France (FR), United Kingdom (GB), Germany (DE), Netherlands (NL), Portugal (PT), Tunisia (TN)
 
 const SUPPORTED_COUNTRIES = {
-  FR: { name: "France", flag: "\u{1F1EB}\u{1F1F7}", code: "fr" },
-  UK: { name: "United Kingdom", flag: "\u{1F1EC}\u{1F1E7}", code: "gb" },
-  DE: { name: "Germany", flag: "\u{1F1E9}\u{1F1EA}", code: "de" },
-  NL: { name: "Netherlands", flag: "\u{1F1F3}\u{1F1F1}", code: "nl" },
-  PT: { name: "Portugal", flag: "\u{1F1F5}\u{1F1F9}", code: "pt" },
+  FR: { name: "France", code: "fr" },
+  GB: { name: "United Kingdom", code: "gb" },
+  DE: { name: "Germany", code: "de" },
+  NL: { name: "Netherlands", code: "nl" },
+  PT: { name: "Portugal", code: "pt" },
+  TN: { name: "Tunisia", code: "tn" },
 };
+
+/**
+ * Get flag image URL for a country code (reliable cross-platform rendering)
+ * Uses flagcdn.com which serves SVG country flags
+ * @param {string} countryCode - ISO country code
+ * @returns {string} Flag image URL
+ */
+export function getFlagUrl(countryCode) {
+  const info = SUPPORTED_COUNTRIES[countryCode];
+  const iso = info ? info.code : countryCode.toLowerCase();
+  return `https://flagcdn.com/w80/${iso}.png`;
+}
 
 const STORAGE_KEY = "selectedCountry";
 const DEFAULT_COUNTRY = "FR";
@@ -17,7 +30,12 @@ const DEFAULT_COUNTRY = "FR";
  * @returns {string} Country code (FR, UK, DE, NL, PT)
  */
 export function getSelectedCountry() {
-  const stored = localStorage.getItem(STORAGE_KEY);
+  let stored = localStorage.getItem(STORAGE_KEY);
+  // Migrate old "UK" key to "GB"
+  if (stored === "UK") {
+    stored = "GB";
+    localStorage.setItem(STORAGE_KEY, stored);
+  }
   if (stored && SUPPORTED_COUNTRIES[stored]) {
     return stored;
   }

@@ -19,7 +19,7 @@
               :class="{ 'country-btn-active': selectedCountry === code }"
               @click="selectCountry(code)"
             >
-              <span class="country-flag">{{ country.flag }}</span>
+              <img class="country-flag" :src="getFlagUrl(code)" :alt="country.name" />
               <span class="country-name">{{ country.name }}</span>
             </button>
           </div>
@@ -40,7 +40,7 @@
               :class="{ 'lang-option-active': locale === 'fr' }"
               @click="changeLanguage('fr')"
             >
-              Fran\u00E7ais
+              Français
             </button>
           </div>
         </div>
@@ -64,6 +64,7 @@ import {
   getSelectedCountry,
   setSelectedCountry,
   getSupportedCountries,
+  getFlagUrl,
 } from "../utils/geolocation.js";
 
 const { t, locale, setLocale } = useI18n();
@@ -178,7 +179,7 @@ function closeSettings() {
 
 .country-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 0.8rem;
 }
 
@@ -209,7 +210,10 @@ function closeSettings() {
 }
 
 .country-flag {
-  font-size: 2rem;
+  width: 2.5rem;
+  height: auto;
+  border-radius: 3px;
+  object-fit: cover;
 }
 
 .country-name {
