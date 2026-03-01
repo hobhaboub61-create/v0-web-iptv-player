@@ -1,5 +1,6 @@
 <template>
-  <Nav :tvs="tvs" :active="url" :isIptv="isIptv" :loading="loading" @switchMode="switchMode" />
+  <Nav :tvs="tvs" :active="url" :mode="currentMode" :loading="loading" :currentCountry="selectedCountry" @switchMode="switchMode" @openSettings="showSettings = true" />
+  <Settings :isOpen="showSettings" @close="showSettings = false" @countryChanged="onCountryChanged" />
   <component :is="currentView" :value="url" :track="caption" />
 </template>
 
@@ -10,20 +11,24 @@ import { ref, computed, onMounted, watch } from "vue";
 import Home from "./views/Index.vue";
 import NotFound from "./views/NotFound.vue";
 import Nav from "./components/Nav.vue";
+import Settings from "./components/Settings.vue";
 import { useI18n } from "./i18n/index.js";
+import { getSelectedCountry, getPlaylistUrl } from "./utils/geolocation.js";
 
 const { t, locale } = useI18n();
 
 const IPTV_URL = "https://iptv-org.github.io/iptv/index.m3u";
-const DEFAULT_LIST = "https://raw.githubusercontent.com/imDazui/Tvlist-awesome-m3u-m3u8/master/m3u/全国景区源.m3u8";
+const RADIO_GLOBAL_URL = "https://iptv-org.github.io/iptv/index.m3u";
 
 const routes = { "/": Home };
 const currentPath = ref(window.location.hash);
 const url = ref("");
 const tvs = ref([]);
 const caption = ref("");
-const isIptv = ref(false);
+const currentMode = ref("home");
 const loading = ref(false);
+const showSettings = ref(false);
+const selectedCountry = ref(getSelectedCountry());
 
 // Cache for loaded playlists
 const playlistCache = {};
@@ -38,36 +43,71 @@ const currentView = computed(() => {
     const searchParams = new URLSearchParams(hash.slice(hash.indexOf("?")));
     const newUrl = searchParams.get("url");
     const newCaption = searchParams.get("caption");
-    const iptvFlag = searchParams.get("iptv");
+    const mode = searchParams.get("mode");
 
     if (newUrl) url.value = decodeURIComponent(newUrl);
     if (newCaption) caption.value = decodeURIComponent(newCaption);
 
-    const wasIptv = isIptv.value;
-    isIptv.value = iptvFlag === "1";
+    if (mode) {
+      const previousMode = currentMode.value;
+      currentMode.value = mode;
 
-    // If switching mode via hash, reload the list
-    if (wasIptv !== isIptv.value && !newUrl) {
-      loadPlaylist(isIptv.value ? IPTV_URL : null);
+      if (previousMode !== mode && !newUrl) {
+        loadPlaylistForMode(mode);
+      }
     }
   }
   return routes[hash.slice(1).split("?")[0] || "/"] || NotFound;
 });
 
 function switchMode(mode) {
-  isIptv.value = mode === "iptv";
-  loadPlaylist(isIptv.value ? IPTV_URL : null);
+  currentMode.value = mode;
+  loadPlaylistForMode(mode);
 }
 
-async function loadPlaylist(playlistUrl) {
+function loadPlaylistForMode(mode) {
+  let playlistUrl;
+
+  if (mode === "iptv") {
+    playlistUrl = IPTV_URL;
+  } else if (mode === "radio") {
+    playlistUrl = RADIO_GLOBAL_URL;
+  } else {
+    playlistUrl = getPlaylistUrl(selectedCountry.value, "home");
+  }
+
+  loadPlaylist(playlistUrl, mode);
+}
+
+function onCountryChanged(country) {
+  selectedCountry.value = country;
+}
+
+async function loadPlaylist(playlistUrl, mode = "home") {
   if (!playlistUrl) {
     const params = new URLSearchParams(window.location.hash.replace("#/", ""));
-    playlistUrl = params.get("s") || localStorage.getItem("tvlistUrl") || DEFAULT_LIST;
+    playlistUrl = params.get("s");
+
+    if (!playlistUrl) {
+      if (mode === "iptv") {
+        playlistUrl = IPTV_URL;
+      } else if (mode === "radio") {
+        playlistUrl = RADIO_GLOBAL_URL;
+      } else {
+        playlistUrl = getPlaylistUrl(selectedCountry.value, "home");
+      }
+    }
   }
 
   // Check cache first
   if (playlistCache[playlistUrl]) {
-    tvs.value = playlistCache[playlistUrl];
+    let cached = playlistCache[playlistUrl];
+
+    if (mode === "radio") {
+      cached = filterRadios(cached);
+    }
+
+    tvs.value = cached;
     selectFirstChannel();
     return;
   }
@@ -78,11 +118,16 @@ async function loadPlaylist(playlistUrl) {
     if (suffixName === "m3u8") suffixName = "m3u";
 
     const d = await listTv(playlistUrl);
-    const parsed = parse(d.data, suffixName);
+    let parsed = parse(d.data, suffixName);
+
+    if (mode === "radio") {
+      parsed = filterRadios(parsed);
+    }
+
     playlistCache[playlistUrl] = parsed;
     tvs.value = parsed;
 
-    if (!isIptv.value) {
+    if (mode === "home") {
       localStorage.setItem("tvlistUrl", playlistUrl);
     }
 
@@ -95,8 +140,25 @@ async function loadPlaylist(playlistUrl) {
   }
 }
 
+function filterRadios(channels) {
+  return channels.filter((channel) => {
+    if (!channel.isTv) return true;
+
+    const name = (channel.name || "").toLowerCase();
+    const groupTitle = (channel.meta?.["group-title"] || "").toLowerCase();
+
+    const isRadio =
+      name.includes("radio") ||
+      name.includes("fm") ||
+      groupTitle.includes("radio") ||
+      groupTitle.includes("audio");
+
+    return isRadio;
+  });
+}
+
 function selectFirstChannel() {
-  if (!url.value || isIptv.value) {
+  if (!url.value || currentMode.value === "iptv") {
     const firstTv = tvs.value.find((t) => t.isTv);
     if (firstTv) {
       url.value = firstTv.url;
@@ -105,15 +167,25 @@ function selectFirstChannel() {
   }
 }
 
+// Watch for country changes and reload playlist in HOME mode
+watch(
+  () => selectedCountry.value,
+  () => {
+    if (currentMode.value === "home") {
+      loadPlaylistForMode("home");
+    }
+  }
+);
+
 onMounted(() => {
   const params = new URLSearchParams(window.location.hash.replace("#/", ""));
   const url0 = params.get("url");
-  const iptvFlag = params.get("iptv");
+  const mode = params.get("mode") || "home";
 
   if (url0) url.value = decodeURIComponent(url0);
   caption.value = params.get("caption");
-  isIptv.value = iptvFlag === "1";
+  currentMode.value = mode;
 
-  loadPlaylist(isIptv.value ? IPTV_URL : null);
+  loadPlaylistForMode(mode);
 });
 </script>

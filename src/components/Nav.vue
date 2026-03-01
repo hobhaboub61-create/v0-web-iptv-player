@@ -5,32 +5,35 @@
     </div>
     <div class="nav-list-warp" v-show="isOpen">
       <div class="nav-header">
-        <span class="nav-title">{{ t('appTitle') }}</span>
+        <span class="nav-title">{{ t('appTitle') }} <span class="country-indicator">{{ currentCountryFlag }}</span></span>
         <div class="nav-header-actions">
           <button
-            class="lang-toggle"
-            @click="toggleLocale"
-            :title="t('langSwitch')"
-            :aria-label="'Switch to ' + t('langSwitch')"
-          >
-            {{ t('langSwitch') }}
-          </button>
+            class="settings-btn"
+            @click="$emit('openSettings')"
+            :aria-label="t('settings')"
+          >&#9881;</button>
           <button class="nav-close" @click="isOpen = false" aria-label="Close menu">&times;</button>
         </div>
       </div>
       <div class="nav-tabs">
         <a
           class="nav-tab"
-          :class="{ 'nav-tab-active': !isIptv }"
-          href="#/"
+          :class="{ 'nav-tab-active': mode === 'home' }"
+          href="#/?mode=home"
           @click="$emit('switchMode', 'home')"
         >{{ t('tabHome') }}</a>
         <a
           class="nav-tab"
-          :class="{ 'nav-tab-active': isIptv }"
-          href="#/?iptv=1"
+          :class="{ 'nav-tab-active': mode === 'iptv' }"
+          href="#/?mode=iptv"
           @click="$emit('switchMode', 'iptv')"
         >{{ t('tabIptv') }}</a>
+        <a
+          class="nav-tab"
+          :class="{ 'nav-tab-active': mode === 'radio' }"
+          href="#/?mode=radio"
+          @click="$emit('switchMode', 'radio')"
+        >{{ t('tabRadio') }}</a>
       </div>
       <div class="nav-search" v-if="props.tvs.length > 20 || search">
         <input
@@ -63,7 +66,7 @@
             <a
               v-if="i.isTv"
               :class="{ active: i.url == active }"
-              :href="'#/?url=' + encodeURIComponent(i.url) + (i.caption ? '&caption=' + encodeURIComponent(i.caption) : '') + (isIptv ? '&iptv=1' : '')"
+              :href="'#/?url=' + encodeURIComponent(i.url) + (i.caption ? '&caption=' + encodeURIComponent(i.caption) : '') + '&mode=' + mode"
               @click="setTitle(i.name)"
             >{{ i.name }}</a>
             <span v-else class="group-label">{{ i.name }}</span>
@@ -77,14 +80,21 @@
 <script setup>
 import { ref, computed } from "vue";
 import { useI18n } from "../i18n/index.js";
+import { getCountryInfo } from "../utils/geolocation.js";
 
 const { t, toggleLocale } = useI18n();
 
-const props = defineProps(["tvs", "active", "isIptv", "loading"]);
-defineEmits(["switchMode"]);
+const props = defineProps(["tvs", "active", "mode", "loading", "currentCountry"]);
+defineEmits(["switchMode", "openSettings"]);
 
 const isOpen = ref(false);
 const search = ref("");
+
+const currentCountryFlag = computed(() => {
+  if (!props.currentCountry) return "";
+  const countryInfo = getCountryInfo(props.currentCountry);
+  return countryInfo?.flag || "";
+});
 
 const tvChannelCount = computed(() => {
   return props.tvs.filter((i) => i.isTv).length;
@@ -169,6 +179,14 @@ function setTitle(title) {
       letter-spacing: 0.03em;
       white-space: nowrap;
       min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      .country-indicator {
+        font-size: 1.3rem;
+        line-height: 1;
+      }
     }
 
     .nav-header-actions {
@@ -178,19 +196,21 @@ function setTitle(title) {
       flex-shrink: 0;
     }
 
-    .lang-toggle {
+    .settings-btn {
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
       color: #fff;
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      padding: 0.22rem 0.55rem;
-      border-radius: 10px;
+      font-size: 0.9rem;
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
       cursor: pointer;
       transition: all 0.2s;
-      line-height: 1.2;
-      white-space: nowrap;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
       &:hover {
         background: #fd6a30;
         border-color: #fd6a30;
@@ -222,10 +242,10 @@ function setTitle(title) {
   .nav-tab {
     flex: 1;
     text-align: center;
-    padding: 0.5rem 0.4rem;
-    font-size: 0.75rem;
+    padding: 0.4rem 0.3rem;
+    font-size: 0.7rem;
     font-weight: 600;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
     color: rgba(255, 255, 255, 0.5);
     text-decoration: none;
     border-bottom: 2px solid transparent;

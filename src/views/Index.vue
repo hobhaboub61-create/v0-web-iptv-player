@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-import zhCN from "video.js/dist/lang/zh-CN.json";
+import en from "video.js/dist/lang/en.json";
 import fr from "video.js/dist/lang/fr.json";
 import { computed, onMounted, ref, watch } from "vue";
 import { translatePlugin, refreshTranslateBtn } from "../utils/videojsPlugins";
@@ -26,7 +26,7 @@ const tracks = computed(() => {
   );
 });
 const languages = ref({
-  "zh-CN": zhCN,
+  en: en,
   fr: fr,
 });
 
@@ -37,9 +37,17 @@ const languages = ref({
     player.translatePlugin();
 
     // Set initial language and watch for changes
-    player.language(locale.value === "fr" ? "fr" : "zh-CN");
+    player.language(locale.value === "fr" ? "fr" : "en");
     watch(locale, (newLocale) => {
-      player.language(newLocale === "fr" ? "fr" : "zh-CN");
+      player.language(newLocale === "fr" ? "fr" : "en");
+    });
+
+    // Watch for source changes and update player
+    watch(() => props.value, (newValue) => {
+      if (newValue && player) {
+        player.src({ src: newValue, type: "application/x-mpegURL" });
+        player.play();
+      }
     });
 
     watch(tracks, () => {
