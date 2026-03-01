@@ -19,7 +19,13 @@
               :class="{ 'country-btn-active': selectedCountry === code }"
               @click="selectCountry(code)"
             >
-              <img class="country-flag" :src="getFlagUrl(code)" :alt="country.name" />
+              <img
+                class="country-flag"
+                :src="getFlagUrl(code)"
+                :alt="country.name"
+                @error="(e) => e.target.style.display = 'none'"
+              />
+              <span class="country-code">{{ code }}</span>
               <span class="country-name">{{ country.name }}</span>
             </button>
           </div>
@@ -214,6 +220,13 @@ function closeSettings() {
   height: auto;
   border-radius: 3px;
   object-fit: cover;
+}
+
+.country-code {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.05em;
 }
 
 .country-name {

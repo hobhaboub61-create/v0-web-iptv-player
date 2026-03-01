@@ -5,7 +5,7 @@
     </div>
     <div class="nav-list-warp" v-show="isOpen">
       <div class="nav-header">
-        <span class="nav-title">{{ t('appTitle') }} <img v-if="currentCountryFlagUrl" class="country-indicator" :src="currentCountryFlagUrl" alt="" /></span>
+        <span class="nav-title">{{ t('appTitle') }} <img v-if="currentCountryFlagUrl" class="country-indicator" :src="currentCountryFlagUrl" alt="" @error="(e) => e.target.style.display='none'" /></span>
         <div class="nav-header-actions">
           <button
             class="settings-btn"
