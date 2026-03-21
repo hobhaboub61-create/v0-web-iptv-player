@@ -67,11 +67,11 @@ const currentView = computed(() => {
 
 function switchMode(mode) {
   currentMode.value = mode;
-  loadPlaylistForMode(mode);
+  loadPlaylistForMode(mode, true);
   trackInteraction('nav_mode_switch', 'switch', { newMode: mode });
 }
 
-function loadPlaylistForMode(mode) {
+function loadPlaylistForMode(mode, preserveSelection = false) {
   let playlistUrl;
 
   if (mode === "iptv") {
@@ -82,14 +82,14 @@ function loadPlaylistForMode(mode) {
     playlistUrl = getPlaylistUrl(selectedCountry.value, "home");
   }
 
-  loadPlaylist(playlistUrl, mode);
+  loadPlaylist(playlistUrl, mode, preserveSelection);
 }
 
 function onCountryChanged(country) {
   selectedCountry.value = country;
 }
 
-async function loadPlaylist(playlistUrl, mode = "home") {
+async function loadPlaylist(playlistUrl, mode = "home", preserveSelection = false) {
   if (!playlistUrl) {
     const params = new URLSearchParams(window.location.hash.replace("#/", ""));
     playlistUrl = params.get("s");
@@ -114,7 +114,9 @@ async function loadPlaylist(playlistUrl, mode = "home") {
     }
 
     tvs.value = cached;
-    selectFirstChannel();
+    if (!preserveSelection) {
+      selectFirstChannel();
+    }
     return;
   }
 
@@ -137,7 +139,9 @@ async function loadPlaylist(playlistUrl, mode = "home") {
       localStorage.setItem("tvlistUrl", playlistUrl);
     }
 
-    selectFirstChannel();
+    if (!preserveSelection) {
+      selectFirstChannel();
+    }
   } catch (e) {
     console.error("Failed to load playlist:", e);
     tvs.value = [{ name: t("failedToLoad"), isTv: false }];
