@@ -36,12 +36,22 @@
         >{{ t('tabRadio') }}</a>
       </div>
       <div class="nav-search" v-if="props.tvs.length > 20 || search">
-        <input
-          v-model="search"
-          type="text"
-          :placeholder="t('searchPlaceholder')"
-          class="nav-search-input"
-        />
+        <div class="search-wrapper">
+          <input
+            v-model="search"
+            type="text"
+            :placeholder="t('searchPlaceholder')"
+            class="nav-search-input"
+          />
+          <button
+            v-if="search"
+            class="search-clear"
+            @click="search = ''"
+            :aria-label="t('clearSearch') || 'Clear search'"
+          >
+            ✕
+          </button>
+        </div>
       </div>
       <div class="nav-loading" v-if="loading">
         <span class="spinner"></span>
@@ -118,20 +128,29 @@ function setTitle(title) {
   top: 0;
   left: 0;
   z-index: 100;
-  color: #fff;
+  color: var(--text-primary);
 
   .nav-menu {
     width: 1.5rem;
     height: 1.5rem;
     padding: 1rem;
     margin: 1rem;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 217, 255, 0.1);
+    border: 1px solid rgba(0, 217, 255, 0.2);
     border-radius: 50%;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
     &:hover {
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 217, 255, 0.2);
+      border-color: var(--primary-neon);
+      box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+      transform: scale(1.1);
     }
+    
     .logo {
       width: 1.5rem;
     }
@@ -139,8 +158,8 @@ function setTitle(title) {
 
   .nav-list-warp {
     display: none;
-    background: rgba(10, 10, 20, 0.92);
-    backdrop-filter: blur(12px);
+    background: linear-gradient(180deg, rgba(10, 10, 20, 0.98) 0%, rgba(15, 10, 25, 0.96) 100%);
+    backdrop-filter: blur(15px);
     padding: 0;
     border-radius: 0;
     width: 300px;
@@ -148,6 +167,7 @@ function setTitle(title) {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    border-right: 1px solid var(--border-color);
   }
 
   &:not(.nav-open) {
@@ -169,66 +189,86 @@ function setTitle(title) {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.9rem 0.8rem 0.5rem 1.2rem;
-    min-height: 2.4rem;
+    padding: 1rem 0.8rem 0.8rem 1.2rem;
+    min-height: 2.6rem;
+    border-bottom: 1px solid var(--border-light);
 
     .nav-title {
       font-size: 1.1rem;
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing: 0.03em;
       white-space: nowrap;
       min-width: 0;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.6rem;
+      background: linear-gradient(135deg, var(--primary-neon) 0%, var(--accent-silver) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
 
       .country-indicator {
         height: 1rem;
         width: auto;
-        border-radius: 2px;
+        border-radius: 3px;
         vertical-align: middle;
+        border: 1px solid var(--border-color);
       }
     }
 
     .nav-header-actions {
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.6rem;
       flex-shrink: 0;
     }
 
     .settings-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #fff;
-      font-size: 0.9rem;
-      padding: 0.3rem 0.5rem;
-      border-radius: 6px;
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid var(--border-color);
+      color: var(--primary-neon);
+      font-size: 0.95rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 8px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       line-height: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 2rem;
-      height: 2rem;
+      width: 2.2rem;
+      height: 2.2rem;
+      
       &:hover {
-        background: #fd6a30;
-        border-color: #fd6a30;
+        background: var(--primary-neon);
+        border-color: var(--primary-neon);
+        color: var(--bg-darker);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+        transform: scale(1.05);
+      }
+      
+      &:active {
+        transform: scale(0.95);
       }
     }
 
     .nav-close {
-      background: none;
-      border: none;
-      color: #fff;
-      font-size: 1.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-light);
+      color: var(--text-primary);
+      font-size: 1.4rem;
       cursor: pointer;
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
+      padding: 0.3rem 0.5rem;
+      border-radius: 6px;
       line-height: 1;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 300;
+      
       &:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(0, 217, 255, 0.2);
+        border-color: var(--primary-neon);
+        color: var(--primary-neon);
+        transform: rotate(90deg);
       }
     }
   }
@@ -236,87 +276,127 @@ function setTitle(title) {
   .nav-tabs {
     display: flex;
     gap: 0;
-    padding: 0.5rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border-light);
   }
 
   .nav-tab {
     flex: 1;
     text-align: center;
-    padding: 0.4rem 0.3rem;
+    padding: 0.5rem 0.3rem;
     font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    color: rgba(255, 255, 255, 0.5);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
     text-decoration: none;
     border-bottom: 2px solid transparent;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-transform: uppercase;
+    
     &:hover {
-      color: rgba(255, 255, 255, 0.8);
+      color: var(--primary-neon);
+      border-bottom-color: rgba(0, 217, 255, 0.3);
     }
   }
 
   .nav-tab-active {
-    color: #fd6a30;
-    border-bottom-color: #fd6a30;
+    color: var(--primary-neon);
+    border-bottom-color: var(--primary-neon);
   }
 
   .nav-search {
-    padding: 0.6rem 1rem;
+    padding: 0.8rem 1rem;
+    
+    .search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    
     .nav-search-input {
       width: 100%;
       box-sizing: border-box;
-      padding: 0.45rem 0.8rem;
-      border-radius: 6px;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
+      padding: 0.6rem 2.5rem 0.6rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-light);
+      background: rgba(0, 217, 255, 0.05);
+      color: var(--text-primary);
       font-size: 0.85rem;
       outline: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      
       &::placeholder {
-        color: rgba(255, 255, 255, 0.35);
+        color: var(--text-tertiary);
       }
+      
       &:focus {
-        border-color: #fd6a30;
+        border-color: var(--primary-neon);
+        background: rgba(0, 217, 255, 0.1);
+        box-shadow: 0 0 15px rgba(0, 217, 255, 0.2);
+      }
+    }
+    
+    .search-clear {
+      position: absolute;
+      right: 0.8rem;
+      background: none;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      padding: 0.4rem;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      &:hover {
+        color: var(--primary-neon);
+        transform: scale(1.2) rotate(90deg);
+      }
+      
+      &:active {
+        transform: scale(0.9) rotate(90deg);
       }
     }
   }
 
   .nav-channel-count {
-    padding: 0.2rem 1.2rem 0.3rem;
+    padding: 0.3rem 1.2rem 0.4rem;
     font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--text-tertiary);
     letter-spacing: 0.03em;
+    font-weight: 500;
   }
 
   .nav-no-results {
     padding: 2rem 1.2rem;
     font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--text-tertiary);
     text-align: center;
   }
 
   .nav-loading {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.8rem;
     padding: 2rem 1.2rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-secondary);
     font-size: 0.9rem;
   }
 
   .spinner {
     display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    border-top-color: #fd6a30;
+    width: 1.2rem;
+    height: 1.2rem;
+    border: 2px solid var(--border-light);
+    border-top-color: var(--primary-neon);
     border-radius: 50%;
-    animation: spin 0.7s linear infinite;
+    animation: spin 0.8s linear infinite;
     flex-shrink: 0;
   }
 
@@ -325,7 +405,8 @@ function setTitle(title) {
   }
 
   .active {
-    color: #fd6a30;
+    color: var(--primary-neon);
+    font-weight: 600;
   }
 
   .nav-list {
@@ -336,46 +417,74 @@ function setTitle(title) {
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.15) transparent;
+    scrollbar-color: var(--border-color) transparent;
+    
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 3px;
+      
+      &:hover {
+        background: var(--primary-neon);
+      }
+    }
   }
 
   .sub-nav {
     padding: 0 1rem 0 1.2rem;
-    height: 2.2rem;
-    line-height: 2.2rem;
+    height: 2.3rem;
+    line-height: 2.3rem;
     display: flex;
     align-items: center;
     min-width: 0;
+    transition: all 0.2s;
+    
     &:hover {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(0, 217, 255, 0.08);
+      padding-left: 1.4rem;
     }
+    
     .tv-logo {
       max-width: 2.5rem;
       max-height: 1.6rem;
       margin-right: 0.8rem;
-      border-radius: 3px;
+      border-radius: 4px;
       flex-shrink: 0;
+      border: 1px solid var(--border-light);
     }
+    
     a {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       font-size: 0.88rem;
       min-width: 0;
+      transition: color 0.2s;
+      
+      &:hover {
+        color: var(--primary-neon);
+      }
     }
   }
 
   .group-label {
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.7rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(255, 255, 255, 0.35);
-    padding-top: 0.5rem;
+    letter-spacing: 0.1em;
+    color: var(--text-tertiary);
+    padding-top: 0.6rem;
   }
 
   a {
-    color: #fff;
+    color: var(--text-primary);
     text-decoration: none;
   }
 }
