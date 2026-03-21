@@ -9,6 +9,12 @@
         <div class="nav-header-actions">
           <button
             class="settings-btn"
+            @click="$emit('openAnalytics')"
+            :aria-label="'Analytics'"
+            title="View Analytics"
+          >📊</button>
+          <button
+            class="settings-btn"
             @click="$emit('openSettings')"
             :aria-label="t('settings')"
           >&#9881;</button>

@@ -1,6 +1,7 @@
 <template>
-  <Nav :tvs="tvs" :active="url" :mode="currentMode" :loading="loading" :currentCountry="selectedCountry" @switchMode="switchMode" @openSettings="showSettings = true" />
+  <Nav :tvs="tvs" :active="url" :mode="currentMode" :loading="loading" :currentCountry="selectedCountry" @switchMode="switchMode" @openSettings="showSettings = true" @openAnalytics="showAnalytics = true" />
   <Settings :isOpen="showSettings" @close="showSettings = false" @countryChanged="onCountryChanged" />
+  <AnalyticsDashboard :isOpen="showAnalytics" @close="showAnalytics = false" />
   <component :is="currentView" :value="url" :track="caption" />
 </template>
 
@@ -12,10 +13,13 @@ import Home from "./views/Index.vue";
 import NotFound from "./views/NotFound.vue";
 import Nav from "./components/Nav.vue";
 import Settings from "./components/Settings.vue";
+import AnalyticsDashboard from "./components/AnalyticsDashboard.vue";
 import { useI18n } from "./i18n/index.js";
 import { getSelectedCountry, getPlaylistUrl } from "./utils/geolocation.js";
+import { useTracking } from "./composables/useTracking.js";
 
 const { t, locale } = useI18n();
+const { initializeTracking, trackInteraction, cleanup } = useTracking();
 
 const IPTV_URL = "https://iptv-org.github.io/iptv/index.m3u";
 const RADIO_GLOBAL_URL = "https://iptv-org.github.io/iptv/index.m3u";
@@ -28,6 +32,7 @@ const caption = ref("");
 const currentMode = ref("home");
 const loading = ref(false);
 const showSettings = ref(false);
+const showAnalytics = ref(false);
 const selectedCountry = ref(getSelectedCountry());
 
 // Cache for loaded playlists
@@ -63,6 +68,7 @@ const currentView = computed(() => {
 function switchMode(mode) {
   currentMode.value = mode;
   loadPlaylistForMode(mode);
+  trackInteraction('nav_mode_switch', 'switch', { newMode: mode });
 }
 
 function loadPlaylistForMode(mode) {
@@ -177,7 +183,10 @@ watch(
   }
 );
 
-onMounted(() => {
+onMounted(async () => {
+  // Initialize tracking
+  await initializeTracking();
+  
   const params = new URLSearchParams(window.location.hash.replace("#/", ""));
   const url0 = params.get("url");
   const mode = params.get("mode") || "home";
@@ -187,5 +196,11 @@ onMounted(() => {
   currentMode.value = mode;
 
   loadPlaylistForMode(mode);
+  
+  // Track page load event
+  trackInteraction('app_load', 'page_load', { mode });
+  
+  // Cleanup on unload
+  window.addEventListener('beforeunload', cleanup);
 });
 </script>

@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
     "@videojs-player/vue": "^1.0.0",
     "axios": "^1.4.0",
     "video.js": "^8.3.0",
