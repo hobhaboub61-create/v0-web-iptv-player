@@ -58,7 +58,7 @@ const currentView = computed(() => {
       currentMode.value = mode;
 
       if (previousMode !== mode && !newUrl) {
-        loadPlaylistForMode(mode);
+        loadPlaylistForMode(mode, true);
       }
     }
   }
