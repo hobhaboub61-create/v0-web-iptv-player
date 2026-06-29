@@ -34,8 +34,15 @@ export function decodeConfig(code) {
   return mappings[code] || null;
 }
 
-// Create a short shareable link
+// Create a short shareable link (returns hash only for href, full URL for sharing)
 export function createShortLink(url, caption = '', mode = 'home') {
+  const config = { url, caption, mode };
+  const code = encodeConfig(config);
+  return `#/s/${code}`;
+}
+
+// Create a full shareable link for copying/sharing
+export function createFullShareLink(url, caption = '', mode = 'home') {
   const config = { url, caption, mode };
   const code = encodeConfig(config);
   const baseUrl = window.location.origin + window.location.pathname;

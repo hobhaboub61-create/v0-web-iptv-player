@@ -41,7 +41,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from '../i18n/index.js';
-import { createShortLink } from '../services/urlShortener.js';
+import { createFullShareLink } from '../services/urlShortener.js';
 
 const { t } = useI18n();
 
@@ -62,7 +62,7 @@ const copied = ref(false);
 
 const shortLink = computed(() => {
   if (!props.url) return '';
-  return createShortLink(props.url, props.caption, props.mode);
+  return createFullShareLink(props.url, props.caption, props.mode);
 });
 
 const originalLength = computed(() => {
