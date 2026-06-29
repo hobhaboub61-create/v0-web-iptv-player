@@ -13,6 +13,11 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: [
+      'sb-58z6wv0pkynv.vercel.run',
+      'localhost',
+      '127.0.0.1'
+    ],
     proxy: {
       '/translate': {
         target: 'http://fanyi.youdao.com/translate',
