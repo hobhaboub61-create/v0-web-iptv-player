@@ -21,8 +21,13 @@ import { useTracking } from "./composables/useTracking.js";
 const { t, locale } = useI18n();
 const { initializeTracking, trackInteraction, cleanup } = useTracking();
 
+// Primary IPTV sources (2026 updated)
 const IPTV_URL = "https://iptv-org.github.io/iptv/index.m3u";
-const RADIO_GLOBAL_URL = "https://iptv-org.github.io/iptv/index.m3u";
+const IPTV_URL_BACKUP = "https://raw.githubusercontent.com/iptv-org/iptv/master/index.m3u";
+
+// Radio sources with multiple quality options
+const RADIO_GLOBAL_URL = "https://iptv-org.github.io/iptv/categories/music.m3u";
+const RADIO_GLOBAL_URL_BACKUP = "https://raw.githubusercontent.com/iptv-org/iptv/master/categories/music.m3u";
 
 const routes = { "/": Home };
 const currentPath = ref(window.location.hash);
@@ -121,33 +126,51 @@ async function loadPlaylist(playlistUrl, mode = "home", preserveSelection = fals
   }
 
   loading.value = true;
-  try {
-    let suffixName = suffix(playlistUrl);
-    if (suffixName === "m3u8") suffixName = "m3u";
-
-    const d = await listTv(playlistUrl);
-    let parsed = parse(d.data, suffixName);
-
-    if (mode === "radio") {
-      parsed = filterRadios(parsed);
-    }
-
-    playlistCache[playlistUrl] = parsed;
-    tvs.value = parsed;
-
-    if (mode === "home") {
-      localStorage.setItem("tvlistUrl", playlistUrl);
-    }
-
-    if (!preserveSelection) {
-      selectFirstChannel();
-    }
-  } catch (e) {
-    console.error("Failed to load playlist:", e);
-    tvs.value = [{ name: t("failedToLoad"), isTv: false }];
-  } finally {
-    loading.value = false;
+  
+  // Define fallback URLs based on mode
+  let fallbackUrls = [playlistUrl];
+  if (mode === "iptv" && playlistUrl === IPTV_URL) {
+    fallbackUrls.push(IPTV_URL_BACKUP);
+  } else if (mode === "radio" && playlistUrl === RADIO_GLOBAL_URL) {
+    fallbackUrls.push(RADIO_GLOBAL_URL_BACKUP);
   }
+  
+  let lastError;
+  for (const url of fallbackUrls) {
+    try {
+      let suffixName = suffix(url);
+      if (suffixName === "m3u8") suffixName = "m3u";
+
+      const d = await listTv(url);
+      let parsed = parse(d.data, suffixName);
+
+      if (mode === "radio") {
+        parsed = filterRadios(parsed);
+      }
+
+      playlistCache[playlistUrl] = parsed;
+      tvs.value = parsed;
+
+      if (mode === "home") {
+        localStorage.setItem("tvlistUrl", playlistUrl);
+      }
+
+      if (!preserveSelection) {
+        selectFirstChannel();
+      }
+      
+      loading.value = false;
+      return; // Success, exit function
+    } catch (e) {
+      lastError = e;
+      console.warn(`Failed to load playlist from ${url}, trying fallback...`, e);
+    }
+  }
+  
+  // All sources failed
+  console.error("Failed to load playlist from all sources:", lastError);
+  tvs.value = [{ name: t("failedToLoad"), isTv: false }];
+  loading.value = false;
 }
 
 function filterRadios(channels) {

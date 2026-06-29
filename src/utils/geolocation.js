@@ -72,7 +72,7 @@ export function getCountryInfo(countryCode) {
 }
 
 /**
- * Get playlist URL for a country and type
+ * Get playlist URL for a country and type (2026 Updated)
  * @param {string} countryCode - Country code (FR, UK, DE, NL, PT)
  * @param {string} type - Playlist type (home, iptv, radio)
  * @returns {string} Playlist URL
@@ -83,8 +83,27 @@ export function getPlaylistUrl(countryCode, type) {
 
   const playlists = {
     home: `https://iptv-org.github.io/iptv/countries/${countryISOCode}.m3u`,
-    iptv: "https://iptv-org.github.io/iptv/index.m3u",
-    radio: `https://iptv-org.github.io/iptv/countries/${countryISOCode}.m3u`,
+    iptv: "https://iptv-org.github.io/iptv/categories/entertainment.m3u",
+    radio: "https://iptv-org.github.io/iptv/categories/music.m3u",
+  };
+
+  return playlists[type] || playlists.home;
+}
+
+/**
+ * Get fallback playlist URL for a country and type
+ * @param {string} countryCode - Country code (FR, UK, DE, NL, PT)
+ * @param {string} type - Playlist type (home, iptv, radio)
+ * @returns {string} Playlist URL (fallback from GitHub raw)
+ */
+export function getPlaylistUrlFallback(countryCode, type) {
+  const countryInfo = SUPPORTED_COUNTRIES[countryCode] || SUPPORTED_COUNTRIES[DEFAULT_COUNTRY];
+  const countryISOCode = countryInfo.code;
+
+  const playlists = {
+    home: `https://raw.githubusercontent.com/iptv-org/iptv/master/countries/${countryISOCode}.m3u`,
+    iptv: "https://raw.githubusercontent.com/iptv-org/iptv/master/categories/entertainment.m3u",
+    radio: "https://raw.githubusercontent.com/iptv-org/iptv/master/categories/music.m3u",
   };
 
   return playlists[type] || playlists.home;
