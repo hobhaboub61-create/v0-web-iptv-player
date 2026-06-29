@@ -1,7 +1,8 @@
 <template>
-  <Nav :tvs="tvs" :active="url" :mode="currentMode" :loading="loading" :currentCountry="selectedCountry" @switchMode="switchMode" @openSettings="showSettings = true" @openAnalytics="showAnalytics = true" />
+  <Nav :tvs="tvs" :active="url" :mode="currentMode" :loading="loading" :currentCountry="selectedCountry" @switchMode="switchMode" @openSettings="showSettings = true" @openAnalytics="showAnalytics = true" @openShareLink="showShareLink = true" />
   <Settings :isOpen="showSettings" @close="showSettings = false" @countryChanged="onCountryChanged" />
   <AnalyticsDashboard :isOpen="showAnalytics" @close="showAnalytics = false" />
+  <ShareLink :isOpen="showShareLink" :url="url" :caption="caption" :mode="currentMode" @close="showShareLink = false" />
   <component :is="currentView" :value="url" :track="caption" />
 </template>
 
@@ -14,9 +15,11 @@ import NotFound from "./views/NotFound.vue";
 import Nav from "./components/Nav.vue";
 import Settings from "./components/Settings.vue";
 import AnalyticsDashboard from "./components/AnalyticsDashboard.vue";
+import ShareLink from "./components/ShareLink.vue";
 import { useI18n } from "./i18n/index.js";
 import { getSelectedCountry, getPlaylistUrl } from "./utils/geolocation.js";
 import { useTracking } from "./composables/useTracking.js";
+import { parseShortLink, createShortLink, cleanupOldMappings } from "./services/urlShortener.js";
 
 const { t, locale } = useI18n();
 const { initializeTracking, trackInteraction, cleanup } = useTracking();
@@ -38,6 +41,7 @@ const currentMode = ref("home");
 const loading = ref(false);
 const showSettings = ref(false);
 const showAnalytics = ref(false);
+const showShareLink = ref(false);
 const selectedCountry = ref(getSelectedCountry());
 
 // Cache for loaded playlists
@@ -49,7 +53,24 @@ window.addEventListener("hashchange", () => {
 
 const currentView = computed(() => {
   const hash = currentPath.value;
-  if (hash.slice(1).includes("?")) {
+  
+  // Check if it's a short link format (#/s/code)
+  const shortLinkConfig = parseShortLink(hash);
+  if (shortLinkConfig) {
+    url.value = shortLinkConfig.url;
+    caption.value = shortLinkConfig.caption || '';
+    const mode = shortLinkConfig.mode || 'home';
+    
+    if (mode) {
+      const previousMode = currentMode.value;
+      currentMode.value = mode;
+
+      if (previousMode !== mode && !shortLinkConfig.url) {
+        loadPlaylistForMode(mode, true);
+      }
+    }
+  } else if (hash.slice(1).includes("?")) {
+    // Handle long URL format (#/?url=...&caption=...&mode=...)
     const searchParams = new URLSearchParams(hash.slice(hash.indexOf("?")));
     const newUrl = searchParams.get("url");
     const newCaption = searchParams.get("caption");
@@ -67,7 +88,7 @@ const currentView = computed(() => {
       }
     }
   }
-  return routes[hash.slice(1).split("?")[0] || "/"] || NotFound;
+  return routes[hash.slice(1).split("?")[0].split("/")[1] || "/"] || NotFound;
 });
 
 function switchMode(mode) {
@@ -213,6 +234,9 @@ watch(
 onMounted(async () => {
   // Initialize tracking
   await initializeTracking();
+  
+  // Clean up old URL mappings
+  cleanupOldMappings();
   
   const params = new URLSearchParams(window.location.hash.replace("#/", ""));
   const url0 = params.get("url");
