@@ -20,6 +20,7 @@ import { useI18n } from "./i18n/index.js";
 import { getSelectedCountry, getPlaylistUrl } from "./utils/geolocation.js";
 import { useTracking } from "./composables/useTracking.js";
 import { parseShortLink, createShortLink, cleanupOldMappings } from "./services/urlShortener.js";
+import { performanceService } from "./services/performanceService.js";
 
 const { t, locale } = useI18n();
 const { initializeTracking, trackInteraction, cleanup } = useTracking();
@@ -44,8 +45,27 @@ const showAnalytics = ref(false);
 const showShareLink = ref(false);
 const selectedCountry = ref(getSelectedCountry());
 
-// Cache for loaded playlists
+// Advanced cache for loaded playlists with TTL
 const playlistCache = {};
+const CACHE_TTL = 3600000; // 1 hour
+function getCachedPlaylist(key) {
+  const cached = playlistCache[key];
+  if (!cached) return null;
+  
+  // Check if cache is still valid
+  if (Date.now() - cached.timestamp > CACHE_TTL) {
+    delete playlistCache[key];
+    return null;
+  }
+  return cached.data;
+}
+
+function setCachedPlaylist(key, data) {
+  playlistCache[key] = {
+    data,
+    timestamp: Date.now()
+  };
+}
 
 window.addEventListener("hashchange", () => {
   currentPath.value = window.location.hash;
@@ -131,9 +151,10 @@ async function loadPlaylist(playlistUrl, mode = "home", preserveSelection = fals
     }
   }
 
-  // Check cache first
-  if (playlistCache[playlistUrl]) {
-    let cached = playlistCache[playlistUrl];
+  // Check cache first with TTL validation
+  const cachedData = getCachedPlaylist(playlistUrl);
+  if (cachedData) {
+    let cached = cachedData;
 
     if (mode === "radio") {
       cached = filterRadios(cached);
@@ -169,7 +190,7 @@ async function loadPlaylist(playlistUrl, mode = "home", preserveSelection = fals
         parsed = filterRadios(parsed);
       }
 
-      playlistCache[playlistUrl] = parsed;
+      setCachedPlaylist(playlistUrl, parsed);
       tvs.value = parsed;
 
       if (mode === "home") {
@@ -232,6 +253,9 @@ watch(
 );
 
 onMounted(async () => {
+  // Initialize performance monitoring
+  performanceService.startMonitoring();
+  
   // Initialize tracking
   await initializeTracking();
   
