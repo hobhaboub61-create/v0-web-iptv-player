@@ -34,7 +34,8 @@ const RADIO_GLOBAL_URL = "https://iptv-org.github.io/iptv/categories/music.m3u";
 const RADIO_GLOBAL_URL_BACKUP = "https://raw.githubusercontent.com/iptv-org/iptv/master/categories/music.m3u";
 
 const routes = { "/": Home };
-const currentPath = ref(window.location.hash);
+// Don't use a reactive ref for currentPath - it can interfere with v0-runtime selector logic
+// Instead, always read directly from window.location.hash
 const url = ref("");
 const tvs = ref([]);
 const caption = ref("");
@@ -67,13 +68,11 @@ function setCachedPlaylist(key, data) {
   };
 }
 
-window.addEventListener("hashchange", () => {
-  currentPath.value = window.location.hash;
-});
+// Hash changes are handled reactively through computed properties reading window.location.hash
 
 const currentView = computed(() => {
   try {
-    const hash = currentPath.value || "#/";
+    const hash = window.location.hash || "#/";
     if (typeof hash !== 'string') {
       return Home;
     }
