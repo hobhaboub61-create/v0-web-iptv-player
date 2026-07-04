@@ -72,52 +72,53 @@ window.addEventListener("hashchange", () => {
 });
 
 const currentView = computed(() => {
-  const hash = currentPath.value;
-  
-  // Check if it's a short link format (#/s/code)
-  const shortLinkConfig = parseShortLink(hash);
-  if (shortLinkConfig) {
-    url.value = shortLinkConfig.url;
-    caption.value = shortLinkConfig.caption || '';
-    const mode = shortLinkConfig.mode || 'home';
+  try {
+    const hash = currentPath.value || "#/";
+    if (typeof hash !== 'string') {
+      return Home;
+    }
     
-    if (mode) {
-      const previousMode = currentMode.value;
-      currentMode.value = mode;
+    // Check if it's a short link format (#/s/code)
+    const shortLinkConfig = parseShortLink(hash);
+    if (shortLinkConfig) {
+      url.value = shortLinkConfig.url;
+      caption.value = shortLinkConfig.caption || '';
+      const mode = shortLinkConfig.mode || 'home';
+      
+      if (mode) {
+        const previousMode = currentMode.value;
+        currentMode.value = mode;
 
-      if (previousMode !== mode && !shortLinkConfig.url) {
-        loadPlaylistForMode(mode, true);
+        if (previousMode !== mode && !shortLinkConfig.url) {
+          loadPlaylistForMode(mode, true);
+        }
+      }
+    } else if (hash.slice(1).includes("?")) {
+      // Handle long URL format (#/?url=...&caption=...&mode=...)
+      const searchParams = new URLSearchParams(hash.slice(hash.indexOf("?")));
+      const newUrl = searchParams.get("url");
+      const newCaption = searchParams.get("caption");
+      const mode = searchParams.get("mode");
+
+      if (newUrl) url.value = decodeURIComponent(newUrl);
+      if (newCaption) caption.value = decodeURIComponent(newCaption);
+
+      if (mode) {
+        const previousMode = currentMode.value;
+        currentMode.value = mode;
+
+        if (previousMode !== mode && !newUrl) {
+          loadPlaylistForMode(mode, true);
+        }
       }
     }
-  } else if (hash.slice(1).includes("?")) {
-    // Handle long URL format (#/?url=...&caption=...&mode=...)
-    const searchParams = new URLSearchParams(hash.slice(hash.indexOf("?")));
-    const newUrl = searchParams.get("url");
-    const newCaption = searchParams.get("caption");
-    const mode = searchParams.get("mode");
-
-    if (newUrl) url.value = decodeURIComponent(newUrl);
-    if (newCaption) caption.value = decodeURIComponent(newCaption);
-
-    if (mode) {
-      const previousMode = currentMode.value;
-      currentMode.value = mode;
-
-      if (previousMode !== mode && !newUrl) {
-        loadPlaylistForMode(mode, true);
-      }
-    }
-  }
-  // Handle short link routes (#/s/code) - always use home view
-  const pathSegments = hash.slice(1).split("?")[0].split("/").filter(Boolean);
-  
-  // Short links always show home view
-  if (pathSegments.length > 0 && pathSegments[0] === "s") {
+    
+    // Always return a valid component
+    return Home;
+  } catch (error) {
+    console.error("[v0] Error in currentView computed:", error);
     return Home;
   }
-  
-  // Default to home for empty hash or home route
-  return Home;
 });
 
 function switchMode(mode) {
