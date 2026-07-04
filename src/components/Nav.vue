@@ -88,8 +88,8 @@
             <a
               v-if="i.isTv"
               :class="{ active: i.url == active }"
-              :href="createShortLink(i.url, i.caption, mode)"
-              @click="setTitle(i.name)"
+              href="#"
+              @click.prevent="navigateToChannel(i)"
             >{{ i.name }}</a>
             <span v-else class="group-label">{{ i.name }}</span>
           </li>
@@ -132,6 +132,15 @@ const filteredTvs = computed(() => {
 
 function setTitle(title) {
   document.title = title + t("titleSuffix");
+}
+
+function navigateToChannel(channel) {
+  setTitle(channel.name);
+  // Navigate via history API + hashchange event to avoid the runtime's
+  // anchor interceptor calling querySelector on an invalid hash selector
+  const shortHash = createShortLink(channel.url, channel.caption, props.mode);
+  history.pushState(null, "", shortHash);
+  window.dispatchEvent(new HashChangeEvent("hashchange"));
 }
 </script>
 
