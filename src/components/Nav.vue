@@ -9,6 +9,12 @@
         <div class="nav-header-actions">
           <button
             class="settings-btn"
+            @click="$emit('openShareLink')"
+            :aria-label="'Share Link'"
+            title="Share Link"
+          >🔗</button>
+          <button
+            class="settings-btn"
             @click="$emit('openAnalytics')"
             :aria-label="'Analytics'"
             title="View Analytics"
@@ -82,7 +88,7 @@
             <a
               v-if="i.isTv"
               :class="{ active: i.url == active }"
-              :href="'#/?url=' + encodeURIComponent(i.url) + (i.caption ? '&caption=' + encodeURIComponent(i.caption) : '') + '&mode=' + mode"
+              :href="createShortLink(i.url, i.caption, mode)"
               @click="setTitle(i.name)"
             >{{ i.name }}</a>
             <span v-else class="group-label">{{ i.name }}</span>
@@ -97,6 +103,7 @@
 import { ref, computed } from "vue";
 import { useI18n } from "../i18n/index.js";
 import { getCountryInfo, getFlagUrl } from "../utils/geolocation.js";
+import { createShortLink } from "../services/urlShortener.js";
 
 const { t, toggleLocale } = useI18n();
 
