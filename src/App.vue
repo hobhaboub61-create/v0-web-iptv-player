@@ -108,7 +108,12 @@ const currentView = computed(() => {
       }
     }
   }
-  return routes[hash.slice(1).split("?")[0].split("/")[1] || "/"] || NotFound;
+  // Handle short link routes (#/s/code) - always use home view
+  const pathSegments = hash.slice(1).split("?")[0].split("/");
+  if (pathSegments[0] === "s") {
+    return routes["/"] || NotFound; // Short links always show home view
+  }
+  return routes[pathSegments[1] || "/"] || NotFound;
 });
 
 function switchMode(mode) {
