@@ -9,9 +9,8 @@
 <script setup>
 import { listTv } from "./api";
 import { parse, suffix } from "./utils/tvlistsupport";
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, onMounted, watch } from "vue";
 import Home from "./views/Index.vue";
-import NotFound from "./views/NotFound.vue";
 import Nav from "./components/Nav.vue";
 import Settings from "./components/Settings.vue";
 import AnalyticsDashboard from "./components/AnalyticsDashboard.vue";
@@ -19,7 +18,7 @@ import ShareLink from "./components/ShareLink.vue";
 import { useI18n } from "./i18n/index.js";
 import { getSelectedCountry, getPlaylistUrl } from "./utils/geolocation.js";
 import { useTracking } from "./composables/useTracking.js";
-import { parseShortLink, createShortLink, cleanupOldMappings } from "./services/urlShortener.js";
+import { parseShortLink, cleanupOldMappings } from "./services/urlShortener.js";
 import { performanceService } from "./services/performanceService.js";
 
 const { t, locale } = useI18n();
@@ -33,8 +32,6 @@ const IPTV_URL_BACKUP = "https://raw.githubusercontent.com/iptv-org/iptv/master/
 const RADIO_GLOBAL_URL = "https://iptv-org.github.io/iptv/categories/music.m3u";
 const RADIO_GLOBAL_URL_BACKUP = "https://raw.githubusercontent.com/iptv-org/iptv/master/categories/music.m3u";
 
-const routes = { "/": Home };
-const currentPath = ref(window.location.hash);
 const url = ref("");
 const tvs = ref([]);
 const caption = ref("");
@@ -67,49 +64,52 @@ function setCachedPlaylist(key, data) {
   };
 }
 
-window.addEventListener("hashchange", () => {
-  currentPath.value = window.location.hash;
-});
+// Single route app: always render Home. Hash changes are parsed by handleHashChange
+// (event-driven, no reactive hash ref - avoids the runtime's querySelector on hash values)
+const currentView = Home;
 
-const currentView = computed(() => {
-  const hash = currentPath.value;
-  
-  // Check if it's a short link format (#/s/code)
-  const shortLinkConfig = parseShortLink(hash);
-  if (shortLinkConfig) {
-    url.value = shortLinkConfig.url;
-    caption.value = shortLinkConfig.caption || '';
-    const mode = shortLinkConfig.mode || 'home';
-    
-    if (mode) {
+function handleHashChange() {
+  try {
+    const hash = window.location.hash || "#/";
+
+    // Check if it's a short link format (#/s/code)
+    const shortLinkConfig = parseShortLink(hash);
+    if (shortLinkConfig) {
+      url.value = shortLinkConfig.url;
+      caption.value = shortLinkConfig.caption || "";
+      const mode = shortLinkConfig.mode || "home";
+
       const previousMode = currentMode.value;
       currentMode.value = mode;
 
       if (previousMode !== mode && !shortLinkConfig.url) {
         loadPlaylistForMode(mode, true);
       }
-    }
-  } else if (hash.slice(1).includes("?")) {
-    // Handle long URL format (#/?url=...&caption=...&mode=...)
-    const searchParams = new URLSearchParams(hash.slice(hash.indexOf("?")));
-    const newUrl = searchParams.get("url");
-    const newCaption = searchParams.get("caption");
-    const mode = searchParams.get("mode");
+    } else if (hash.slice(1).includes("?")) {
+      // Handle long URL format (#/?url=...&caption=...&mode=...)
+      const searchParams = new URLSearchParams(hash.slice(hash.indexOf("?")));
+      const newUrl = searchParams.get("url");
+      const newCaption = searchParams.get("caption");
+      const mode = searchParams.get("mode");
 
-    if (newUrl) url.value = decodeURIComponent(newUrl);
-    if (newCaption) caption.value = decodeURIComponent(newCaption);
+      if (newUrl) url.value = decodeURIComponent(newUrl);
+      if (newCaption) caption.value = decodeURIComponent(newCaption);
 
-    if (mode) {
-      const previousMode = currentMode.value;
-      currentMode.value = mode;
+      if (mode) {
+        const previousMode = currentMode.value;
+        currentMode.value = mode;
 
-      if (previousMode !== mode && !newUrl) {
-        loadPlaylistForMode(mode, true);
+        if (previousMode !== mode && !newUrl) {
+          loadPlaylistForMode(mode, true);
+        }
       }
     }
+  } catch (error) {
+    console.error("Error handling hash change:", error);
   }
-  return routes[hash.slice(1).split("?")[0].split("/")[1] || "/"] || NotFound;
-});
+}
+
+window.addEventListener("hashchange", handleHashChange);
 
 function switchMode(mode) {
   currentMode.value = mode;
@@ -262,18 +262,13 @@ onMounted(async () => {
   // Clean up old URL mappings
   cleanupOldMappings();
   
-  const params = new URLSearchParams(window.location.hash.replace("#/", ""));
-  const url0 = params.get("url");
-  const mode = params.get("mode") || "home";
+  // Parse initial hash (supports both short links #/s/code and long ?url= format)
+  handleHashChange();
 
-  if (url0) url.value = decodeURIComponent(url0);
-  caption.value = params.get("caption");
-  currentMode.value = mode;
-
-  loadPlaylistForMode(mode);
+  loadPlaylistForMode(currentMode.value, !!url.value);
   
   // Track page load event
-  trackInteraction('app_load', 'page_load', { mode });
+  trackInteraction('app_load', 'page_load', { mode: currentMode.value });
   
   // Cleanup on unload
   window.addEventListener('beforeunload', cleanup);
