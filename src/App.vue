@@ -109,11 +109,15 @@ const currentView = computed(() => {
     }
   }
   // Handle short link routes (#/s/code) - always use home view
-  const pathSegments = hash.slice(1).split("?")[0].split("/");
-  if (pathSegments[0] === "s") {
-    return routes["/"] || NotFound; // Short links always show home view
+  const pathSegments = hash.slice(1).split("?")[0].split("/").filter(Boolean);
+  
+  // Short links always show home view
+  if (pathSegments.length > 0 && pathSegments[0] === "s") {
+    return Home;
   }
-  return routes[pathSegments[1] || "/"] || NotFound;
+  
+  // Default to home for empty hash or home route
+  return Home;
 });
 
 function switchMode(mode) {
