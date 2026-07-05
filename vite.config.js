@@ -23,4 +23,8 @@ export default defineConfig({
       }
     }
   },
+  preview: {
+    // Allow all hosts for `vite preview` too (deployed/test servers, *.vercel.app, *.vercel.run)
+    allowedHosts: true,
+  },
 })
