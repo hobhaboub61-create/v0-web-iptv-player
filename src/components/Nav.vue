@@ -103,12 +103,11 @@
 import { ref, computed } from "vue";
 import { useI18n } from "../i18n/index.js";
 import { getCountryInfo, getFlagUrl } from "../utils/geolocation.js";
-import { createShortLink } from "../services/urlShortener.js";
 
 const { t, toggleLocale } = useI18n();
 
 const props = defineProps(["tvs", "active", "mode", "loading", "currentCountry"]);
-defineEmits(["switchMode", "openSettings"]);
+const emit = defineEmits(["switchMode", "openSettings", "openAnalytics", "openShareLink", "selectChannel"]);
 
 const isOpen = ref(false);
 const search = ref("");
@@ -136,11 +135,10 @@ function setTitle(title) {
 
 function navigateToChannel(channel) {
   setTitle(channel.name);
-  // Navigate via history API + hashchange event to avoid the runtime's
-  // anchor interceptor calling querySelector on an invalid hash selector
-  const shortHash = createShortLink(channel.url, channel.caption, props.mode);
-  history.pushState(null, "", shortHash);
-  window.dispatchEvent(new HashChangeEvent("hashchange"));
+  // Emit selection directly to the parent instead of manipulating the URL.
+  // Both anchor hrefs and history.pushState with "#/..." URLs trigger the
+  // preview runtime's querySelector interceptor, which throws on such hashes.
+  emit("selectChannel", channel);
 }
 </script>
 
