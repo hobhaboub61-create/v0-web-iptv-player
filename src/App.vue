@@ -1,5 +1,5 @@
 <template>
-  <Nav :tvs="tvs" :active="url" :mode="currentMode" :loading="loading" :currentCountry="selectedCountry" @switchMode="switchMode" @openSettings="showSettings = true" @openAnalytics="showAnalytics = true" @openShareLink="showShareLink = true" />
+  <Nav :tvs="tvs" :active="url" :mode="currentMode" :loading="loading" :currentCountry="selectedCountry" @switchMode="switchMode" @openSettings="showSettings = true" @openAnalytics="showAnalytics = true" @openShareLink="showShareLink = true" @selectChannel="selectChannel" />
   <Settings :isOpen="showSettings" @close="showSettings = false" @countryChanged="onCountryChanged" />
   <AnalyticsDashboard :isOpen="showAnalytics" @close="showAnalytics = false" />
   <ShareLink :isOpen="showShareLink" :url="url" :caption="caption" :mode="currentMode" @close="showShareLink = false" />
@@ -115,6 +115,14 @@ function switchMode(mode) {
   currentMode.value = mode;
   loadPlaylistForMode(mode, true);
   trackInteraction('nav_mode_switch', 'switch', { newMode: mode });
+}
+
+function selectChannel(channel) {
+  // Set the player source directly - no URL/history manipulation
+  // (hash URLs like #/s/code break the preview runtime's querySelector interceptor)
+  url.value = channel.url;
+  caption.value = channel.caption || "";
+  trackInteraction('channel_select', 'click', { name: channel.name, mode: currentMode.value });
 }
 
 function loadPlaylistForMode(mode, preserveSelection = false) {
