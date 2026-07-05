@@ -13,12 +13,8 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: [
-      'sb-73kf0akev2cw.vercel.run',
-      'sb-58z6wv0pkynv.vercel.run',
-      'localhost',
-      '127.0.0.1'
-    ],
+    // Allow all hosts - the preview host (sb-*.vercel.run) changes on every sandbox restart
+    allowedHosts: true,
     proxy: {
       '/translate': {
         target: 'http://fanyi.youdao.com/translate',
